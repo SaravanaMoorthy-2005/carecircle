@@ -1,0 +1,9 @@
+package-lock.json
+node_modules
+dist
+functions/lib
+coverage
+test-results
+playwright-report
+.runtime
+*-debug.log

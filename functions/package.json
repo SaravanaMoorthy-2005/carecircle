@@ -1,0 +1,28 @@
+{
+  "name": "@carecircle/functions",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.cjs",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "14.5.1",
+    "firebase-functions": "7.4.0",
+    "nodemailer": "10.5.0",
+    "@google-cloud/kms": "6.3.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.14.7",
+    "glob": "14.0.6",
+    "minimatch": "11.0.8",
+    "uuid": "11.1.1",
+    "@google-cloud/pubsub": {
+      "@opentelemetry/core": "2.8.0"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+/functions/lib/
+.env
+.env.*
+!.env.example
+!.env.demo-carecircle
+*.local
+*-debug.log*
+.firebase/
+coverage/
+test-results/
+playwright-report/
+.runtime/
+*.tsbuildinfo
+service-account*.json

@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function verified() { return request.auth != null && request.auth.token.email_verified == true; }
+  function active(circleId) { return verified() && exists(/databases/$(database)/documents/careCircles/$(circleId)/members/$(request.auth.uid)) && get(/databases/$(database)/documents/careCircles/$(circleId)/members/$(request.auth.uid)).data.status == 'active'; }
+  function permits(circleId, permission) {
+   let member = get(/databases/$(database)/documents/careCircles/$(circleId)/members/$(request.auth.uid)).data;
+   let family = ['medication.read','medication.confirm','appointment.read','adherence.read','alert.read','members.read','inventory.read','task.read','task.act','passport.read','checkin.read'];
+   return active(circleId) && (member.role == 'owner' || (permission in member.permissions && ((member.role == 'caregiver' && !(permission in ['members.manage','privacy.manage'])) || (member.role == 'family' && permission in family))));
+  }
+  function bounded() { return request.query.limit != null && request.query.limit <= 300; }
+  match /users/{uid} {
+   allow get: if verified() && request.auth.uid == uid;
+   match /circles/{circleId} { allow get: if verified() && request.auth.uid == uid; allow list: if verified() && request.auth.uid == uid && bounded(); }
+   match /notificationPreferences/{pref} { allow get: if verified() && request.auth.uid == uid; }
+   match /notifications/{notificationId} { allow get: if verified() && request.auth.uid == uid && active(resource.data.circleId); allow list: if verified() && request.auth.uid == uid && active(resource.data.circleId) && bounded(); }
+  }
+  match /careCircles/{circleId} {
+   allow get: if active(circleId);
+   match /members/{uid} { allow get: if verified() && (request.auth.uid == uid || permits(circleId, 'members.manage')); allow list: if permits(circleId,'members.manage') && bounded(); }
+   match /medications/{id} { allow get: if permits(circleId,'medication.read'); allow list: if permits(circleId,'medication.read') && bounded(); }
+   match /doseOccurrences/{id} { allow get: if permits(circleId,'medication.read'); allow list: if (permits(circleId,'medication.read')) && bounded(); }
+   match /appointments/{id} { allow get: if permits(circleId,'appointment.read'); allow list: if permits(circleId,'appointment.read') && bounded(); }
+   match /alerts/{id} { allow get: if permits(circleId,'alert.read'); allow list: if permits(circleId,'alert.read') && bounded(); }
+   match /assistanceRequests/{id} { allow get: if active(circleId); allow list: if active(circleId) && bounded(); }
+   match /auditLogs/{id} { allow get: if permits(circleId,'audit.read'); allow list: if permits(circleId,'audit.read') && bounded(); }
+   match /invitations/{id} { allow get: if permits(circleId,'members.manage'); allow list: if permits(circleId,'members.manage') && bounded(); }
+   match /directory/{id} { allow get: if permits(circleId,'members.read'); allow list: if permits(circleId,'members.read') && bounded(); }
+   match /medicationInventory/{id} { allow get: if permits(circleId,'inventory.read') && permits(circleId,'medication.read'); allow list: if permits(circleId,'inventory.read') && permits(circleId,'medication.read') && bounded(); }
+   match /inventoryAdjustments/{id} { allow get: if permits(circleId,'inventory.read') && permits(circleId,'medication.read'); allow list: if permits(circleId,'inventory.read') && permits(circleId,'medication.read') && bounded(); }
+   match /medicationVersions/{id} { allow get: if permits(circleId,'medication.read'); allow list: if permits(circleId,'medication.read') && bounded(); }
+   match /doseFollowUps/{id} { allow get: if permits(circleId,'medication.read'); allow list: if permits(circleId,'medication.read') && bounded(); }
+   match /careAssignments/{id} { allow get: if permits(circleId,'task.read'); allow list: if permits(circleId,'task.read') && bounded(); }
+   match /prescriptionReconciliations/{id} { allow get: if permits(circleId,'prescription.read'); allow list: if permits(circleId,'prescription.read') && bounded(); }
+   match /wellbeingCheckIns/{id} { allow get: if permits(circleId,'checkin.read'); allow list: if permits(circleId,'checkin.read') && bounded(); }
+   match /wellbeingSettings/{id} { allow get: if permits(circleId,'checkin.read'); }
+   match /wellbeingExpectations/{id} { allow get: if permits(circleId,'checkin.read'); allow list: if permits(circleId,'checkin.read') && bounded(); }
+  }
+  match /{document=**} { allow read,write: if false; }
+ }
+}
